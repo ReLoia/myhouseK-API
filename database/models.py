@@ -23,3 +23,10 @@ class TaskEntity(BaseModel):
     assignedUsers: list[str]
     timestamp: int
     author: str
+
+
+class UserEntity(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    username: str
+    password_hash: str
+    tasks_done: list[PyObjectId] = Field(default_factory=list)

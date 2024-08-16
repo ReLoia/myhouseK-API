@@ -8,3 +8,13 @@ class TaskModel(BaseModel):
     assignedUsers: list[str]
     timestamp: int
     author: str
+
+
+class UserModel(BaseModel):
+    username: str
+    tasks_done: list[str]
+
+
+class UserRegisterModel(BaseModel):
+    username: str
+    password: str
