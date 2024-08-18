@@ -2,8 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from bson import ObjectId
 
-from database.auth.security import decode_access_token
-
 
 class PyObjectId(ObjectId):
     @classmethod
@@ -11,7 +9,7 @@ class PyObjectId(ObjectId):
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v, info):
         if not ObjectId.is_valid(v):
             raise ValueError('Invalid objectid')
         return ObjectId(v)
@@ -26,15 +24,6 @@ class TaskEntity(BaseModel):
     timestamp: int
     author: str
 
-    @staticmethod
-    def otd(obj: dict) -> 'TaskEntity':
-        """
-        Api Object To Database Object
-        :param obj: dict
-        :return: TaskEntity
-        """
-        return TaskEntity(**obj)
-
 
 class UserEntity(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
@@ -43,10 +32,5 @@ class UserEntity(BaseModel):
     tasks_done: list[PyObjectId] = Field(default_factory=list)
 
     @staticmethod
-    def get_user(db, username):
-        return db["users"].find_one({"username": username})
-
-    @staticmethod
-    def get_user_by_token(db, token):
-        decoded_token = decode_access_token(token)
-        return db["users"].find_one({"username": decoded_token["sub"]})
+    async def get_user(db, username) -> 'UserEntity':
+        return UserEntity(**(await db["users"].find_one({"username": username})))

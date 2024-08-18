@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from database.auth.auth import verify_password, get_password_hash
-from database.auth.security import create_access_token
+from database.auth.security import create_access_token, get_user_from_token
 # from security.index import check_api_key
 from database.index import get_db
 from database.models import TaskEntity, UserEntity
@@ -36,7 +36,7 @@ async def root():
 @app.get("/tasks", response_model=List[TaskModel])
 async def get_tasks(
         db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db),
-        _: None = Depends(oauth2_scheme)
+        _: None = Depends(get_user_from_token)
 ):
     tasks_collection = db.get_collection("tasks")
     tasks = await tasks_collection.find().to_list(100)
@@ -48,15 +48,13 @@ async def get_tasks(
 async def create_task(
         task: CreateTaskModel,
         db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db),
-        token: str = Depends(oauth2_scheme)
+        user: UserEntity = Depends(get_user_from_token)
 ):
-    user = await UserEntity.get_user_by_token(db, token)
-
     tasks_collection = db.get_collection("tasks")
     new_task = await tasks_collection.insert_one(
         {
             **task.model_dump(),
-            "author": user["username"],
+            "author": user.username,
             "timestamp": int(datetime.now().timestamp())
         })
     created_task = await tasks_collection.find_one({"_id": new_task.inserted_id})
@@ -73,19 +71,20 @@ async def login(
     user = await UserEntity.get_user(db, form_data.username)
     if not user:
         return {"error": "User not found"}
-    if not verify_password(form_data.password, user["password_hash"]):
+    if not verify_password(form_data.password, user.password_hash):
         return {"error": "Incorrect password"}
 
-    access_token = create_access_token(data={"sub": user["username"]})
+    access_token = create_access_token(data={"sub": user.username})
 
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.post("/register")
 async def register(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db)
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db)
 ):
+    TODO()
     user = await UserEntity.get_user(db, form_data.username)
     if user:
         return {"error": "User already exists"}
@@ -101,9 +100,8 @@ async def register(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-
 @app.get("/user", response_model=UserModel)
 async def get_user(
-        token: str = Depends(oauth2_scheme)
+        user: UserEntity = Depends(get_user_from_token)
 ):
-    TODO()
+    return user
