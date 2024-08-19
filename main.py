@@ -3,13 +3,14 @@ from datetime import datetime
 from typing import List
 
 import motor.motor_asyncio
-from fastapi import FastAPI, Depends
+from bson import ObjectId
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from database.auth.auth import verify_password, get_password_hash
-from database.auth.security import create_access_token, get_user_from_token
+from database.auth.security import create_access_token, get_user_from_token, validate_object_id
 # from security.index import check_api_key
 from database.index import get_db
 from database.models import TaskEntity, UserEntity
@@ -41,6 +42,11 @@ async def get_tasks(
     tasks_collection = db.get_collection("tasks")
     tasks = await tasks_collection.find().to_list(100)
 
+    tasks = map(lambda task: {
+        **task,
+        "id": str(task["_id"]),
+    }, tasks)
+
     return tasks
 
 
@@ -54,12 +60,60 @@ async def create_task(
     new_task = await tasks_collection.insert_one(
         {
             **task.model_dump(),
+            "isCompleted": False,
             "author": user.username,
             "timestamp": int(datetime.now().timestamp())
         })
     created_task = await tasks_collection.find_one({"_id": new_task.inserted_id})
 
-    return created_task
+    return {
+        **created_task,
+        "id": str(created_task["_id"])
+    }
+
+
+@app.post("/tasks/{task_id}/toggle",
+          response_model=dict,
+          responses={
+              404: {"description": "Task not found"},
+              400: {"description": "Invalid task ID"}
+          }
+          )
+async def toggle_task(
+        task_id: str = Depends(validate_object_id),
+        db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db),
+        user: UserEntity = Depends(get_user_from_token)
+):
+    tasks_collection = db.get_collection("tasks")
+    task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    await tasks_collection.update_one({"_id": task_id}, {"$set": {"isCompleted": not task["isCompleted"]}})
+
+    return {"message": "Task updated"}
+
+
+@app.delete("/tasks/{task_id}",
+            response_model=dict,
+            responses={
+                404: {"description": "Task not found"},
+                400: {"description": "Invalid task ID"}
+            }
+            )
+async def delete_task(
+        task_id: str = Depends(validate_object_id),
+        db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db),
+        _: None = Depends(get_user_from_token)
+):
+    tasks_collection = db.get_collection("tasks")
+    task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    await tasks_collection.delete_one({"_id": task_id})
+
+    return {"message": "Task deleted"}
 
 
 # Users API

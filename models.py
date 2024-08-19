@@ -3,8 +3,9 @@ from pydantic import BaseModel
 
 class TaskModel(BaseModel):
     """
-    TaskModel is the Pydantic model that will be used to validate the data that is sent from the server to the client.
+    TaskModel is the Pydantic model of the data that is sent from the server to the client.
     """
+    id: str
     title: str
     description: str
     isCompleted: bool
@@ -20,7 +21,6 @@ class CreateTaskModel(BaseModel):
     """
     title: str
     description: str
-    isCompleted: bool
     assignedUsers: str
 
 

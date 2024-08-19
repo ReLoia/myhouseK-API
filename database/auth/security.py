@@ -2,6 +2,7 @@ import jwt
 from datetime import datetime, timedelta, UTC
 import os
 import motor.motor_asyncio
+from bson import ObjectId
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -48,3 +49,15 @@ async def get_user_from_token(token: str = Depends(oauth2_scheme), db: motor.mot
     if user is None:
         raise credentials_exception
     return user
+
+
+def validate_object_id(task_id: str):
+    """
+    Validate the task_id for FastAPI and convert it to ObjectId.
+    If the task_id is not valid, it will raise a FastAPI HTTPException.
+    :param task_id:
+    :return:
+    """
+    if not ObjectId.is_valid(task_id):
+        raise HTTPException(status_code=400, detail="Invalid task ID")
+    return ObjectId(task_id)
