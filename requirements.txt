@@ -22,3 +22,4 @@ websockets==12.0
 
 passlib~=1.7.4
 PyJWT~=2.9.0
+python-multipart~=0.0.9
