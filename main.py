@@ -16,7 +16,7 @@ from database.index import get_db
 from database.models import TaskEntity, UserEntity
 from utils import TODO
 # models for FastAPI
-from models import TaskModel, UserModel, UserRegisterModel, CreateTaskModel
+from models import TaskModel, UserModel, UserRegisterModel, CreateTaskModel, Message
 
 app = FastAPI(
     title="MyHouseK API",
@@ -72,11 +72,35 @@ async def create_task(
     }
 
 
+@app.put("/tasks/{task_id}", response_model=TaskModel, responses={
+    404: {"description": "Task not found", "model": Message},
+    400: {"description": "Invalid task ID", "model": Message}
+})
+async def update_task(
+        task_id: str = Depends(validate_object_id),
+        db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db),
+        _: None = Depends(get_user_from_token)
+):
+    tasks_collection = db.get_collection("tasks")
+    task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    await tasks_collection.update_one({"_id": task_id}, {"$set": task.model_dump()})
+
+    updated_task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
+
+    return {
+        **updated_task,
+        "id": str(updated_task["_id"])
+    }
+
+
 @app.post("/tasks/{task_id}/toggle",
-          response_model=dict,
+          response_model=Message,
           responses={
-              404: {"description": "Task not found"},
-              400: {"description": "Invalid task ID"}
+              404: {"description": "Task not found", "model": Message},
+              400: {"description": "Invalid task ID", "model": Message}
           }
           )
 async def toggle_task(
@@ -95,10 +119,10 @@ async def toggle_task(
 
 
 @app.delete("/tasks/{task_id}",
-            response_model=dict,
+            response_model=Message,
             responses={
-                404: {"description": "Task not found"},
-                400: {"description": "Invalid task ID"}
+                404: {"description": "Task not found", "model": Message},
+                400: {"description": "Invalid task ID", "model": Message}
             }
             )
 async def delete_task(
@@ -154,7 +178,7 @@ async def register(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/user", response_model=UserModel)
+@app.get("/profile", response_model=UserModel)
 async def get_user(
         user: UserEntity = Depends(get_user_from_token)
 ):

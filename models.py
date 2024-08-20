@@ -32,3 +32,7 @@ class UserModel(BaseModel):
 class UserRegisterModel(BaseModel):
     username: str
     password: str
+
+
+class Message(BaseModel):
+    message: str
