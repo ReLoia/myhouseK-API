@@ -1,13 +1,13 @@
 import jwt
 from datetime import datetime, timedelta, UTC
 import os
-import motor.motor_asyncio
 from bson import ObjectId
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 
-from database.index import get_db
+from database.session import get_db
 from database.models import UserEntity
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -30,7 +30,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-async def get_user_from_token(token: str = Depends(oauth2_scheme), db: motor.motor_asyncio.AsyncIOMotorDatabase = Depends(get_db)) -> 'UserEntity':
+async def get_user_from_token(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> 'UserEntity':
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",

@@ -1,36 +1,45 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from bson import ObjectId
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Table
+import sqlalchemy
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
+
+DATABASE_URL = "sqlite:///./backend.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# association table for the many-to-many relationship between users and tasks
+user_tasks = Table(
+    "user_tasks",
+    Base.metadata,
+    Column("user_id", Integer, sqlalchemy.ForeignKey("users.id"), primary_key=True),
+    Column("task_id", Integer, sqlalchemy.ForeignKey("tasks.id"), primary_key=True)
+)
 
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+class UserEntity(Base):
+    __tablename__ = "users"
 
-    @classmethod
-    def validate(cls, v, info):
-        if not ObjectId.is_valid(v):
-            raise ValueError('Invalid objectid')
-        return ObjectId(v)
-
-
-class TaskEntity(BaseModel):
-    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    title: str
-    description: str
-    isCompleted: bool
-    assignedUsers: list[str]
-    timestamp: int
-    author: str
-
-
-class UserEntity(BaseModel):
-    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    username: str
-    password_hash: str
-    tasks_done: list[PyObjectId] = Field(default_factory=list)
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    tasks_done = relationship("TaskEntity", secondary=user_tasks, back_populates="assignedUsers")
 
     @staticmethod
-    async def get_user(db, username) -> 'UserEntity':
-        return UserEntity(**(await db["users"].find_one({"username": username})))
+    def get_user(db, username: str):
+        return db.query(UserEntity).filter(UserEntity.username == username).first()
+
+
+class TaskEntity(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(String)
+    isCompleted = Column(Boolean)
+    assignedUsers = relationship("UserEntity", secondary=user_tasks, back_populates="tasks_done")
+    author = Column(String)
+    timestamp = Column(Integer)
+
+
+Base.metadata.create_all(bind=engine)

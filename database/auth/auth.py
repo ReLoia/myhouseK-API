@@ -1,4 +1,3 @@
-# Methods for authentication
 from passlib.context import CryptContext
 import motor.motor_asyncio
 
