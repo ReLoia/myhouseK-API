@@ -23,7 +23,7 @@ class UserEntity(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String)
-    tasks_done = relationship("TaskEntity", secondary=user_tasks, back_populates="assignedUsers")
+    tasks_done = relationship("TaskEntity", secondary=user_tasks, back_populates="doneBy")
 
     @staticmethod
     def get_user(db, username: str):
@@ -37,9 +37,26 @@ class TaskEntity(Base):
     title = Column(String)
     description = Column(String)
     isCompleted = Column(Boolean)
-    assignedUsers = relationship("UserEntity", secondary=user_tasks, back_populates="tasks_done")
+    assignedUsers = Column(String)
+    doneBy = relationship("UserEntity", secondary=user_tasks, back_populates="tasks_done")
     author = Column(String)
     timestamp = Column(Integer)
+
+    def update(self, data):
+        for key, value in data.items():
+            setattr(self, key, value)
+
+    def model_dump(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "isCompleted": self.isCompleted,
+            "assignedUsers": self.assignedUsers,
+            "doneBy": [user.username for user in self.doneBy],
+            "author": self.author,
+            "timestamp": self.timestamp
+        }
 
 
 Base.metadata.create_all(bind=engine)
