@@ -16,6 +16,8 @@ from database.models import UserEntity, TaskEntity
 from models import TaskModel, UserModel, CreateTaskModel, Message, EditTaskModel
 from utils import TODO
 
+BASE_PATH = os.environ.get("API_ROOT_PATH", "")
+
 app = FastAPI(
     title="MyHouseK API",
     description="API for MyHouseK application",
@@ -28,7 +30,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/docs")
+    return RedirectResponse(url=f"{BASE_PATH}/docs")
 
 
 # Tasks API
@@ -84,22 +86,6 @@ async def update_task(
     return task
 
 
-    # OLD CODE
-    # tasks_collection = db.get_collection("tasks")
-    # task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
-    # if not task:
-    #     raise HTTPException(status_code=404, detail="Task not found")
-    #
-    # await tasks_collection.update_one({"_id": task_id}, {"$set": task.model_dump()})
-    #
-    # updated_task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
-    #
-    # return {
-    #     **updated_task,
-    #     "id": str(updated_task["_id"])
-    # }
-
-
 @app.post("/tasks/{task_id}/toggle",
           response_model=Message,
           responses={
@@ -112,16 +98,16 @@ async def toggle_task(
         db: Session = Depends(get_db),
         user: UserEntity = Depends(get_user_from_token)
 ):
-    TODO()
-    # OLD CODE
-    # tasks_collection = db.get_collection("tasks")
-    # task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
-    # if not task:
-    #     raise HTTPException(status_code=404, detail="Task not found")
-    #
-    # await tasks_collection.update_one({"_id": task_id}, {"$set": {"isCompleted": not task["isCompleted"]}})
-    #
-    # return {"message": "Task updated"}
+    task = db.query(TaskEntity).filter(TaskEntity.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task.isCompleted = not task.isCompleted
+
+    db.commit()
+    db.refresh(task)
+
+    return {"message": "Task updated"}
 
 
 @app.delete("/tasks/{task_id}",
@@ -136,16 +122,14 @@ async def delete_task(
         db: Session = Depends(get_db),
         _: None = Depends(get_user_from_token)
 ):
-    TODO()
-    # OLD CODE
-    # tasks_collection = db.get_collection("tasks")
-    # task = await tasks_collection.find_one({"_id": ObjectId(task_id)})
-    # if not task:
-    #     raise HTTPException(status_code=404, detail="Task not found")
-    #
-    # await tasks_collection.delete_one({"_id": task_id})
-    #
-    # return {"message": "Task deleted"}
+    task = db.query(TaskEntity).filter(TaskEntity.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    db.delete(task)
+    db.commit()
+
+    return {"message": "Task deleted"}
 
 
 # Users API
@@ -154,7 +138,6 @@ async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)
 ):
-    # NEW CODE
     user = db.query(UserEntity).filter(UserEntity.username == form_data.username).first()
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
