@@ -21,7 +21,8 @@ BASE_PATH = os.environ.get("API_ROOT_PATH", "")
 app = FastAPI(
     title="MyHouseK API",
     description="API for MyHouseK application",
-    version="0.2.0"
+    version="0.2.0",
+    root_path=BASE_PATH
 )
 load_dotenv()
 # security
