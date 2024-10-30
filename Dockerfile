@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 LABEL authors="reloia"
 
@@ -11,6 +11,8 @@ RUN pip install --no-cache-dir gunicorn
 
 COPY . /app
 
-EXPOSE 8000
+RUN rm requirements.txt Dockerfile docker-compose.yml
 
-CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--reload"]
+EXPOSE 8104
+
+CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8104", "--reload"]

@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from database.auth.auth import verify_password, get_password_hash
-from database.auth.security import create_access_token, get_user_from_token, validate_object_id
+from database.auth.security import create_access_token, get_user_from_token
 from database.session import get_db
 from database.models import UserEntity, TaskEntity
 
@@ -94,7 +94,7 @@ async def update_task(
           }
           )
 async def toggle_task(
-        task_id: str = Depends(validate_object_id),
+        task_id: str,
         db: Session = Depends(get_db),
         user: UserEntity = Depends(get_user_from_token)
 ):
@@ -118,7 +118,7 @@ async def toggle_task(
             }
             )
 async def delete_task(
-        task_id: str = Depends(validate_object_id),
+        task_id: str,
         db: Session = Depends(get_db),
         _: None = Depends(get_user_from_token)
 ):

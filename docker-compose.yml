@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     container_name: myhousek-api
@@ -10,4 +8,5 @@ services:
       # API root path - leave empty for /
       API_ROOT_PATH:
     ports:
-      - "8000:8000"
+      - "8000:8104"
+    restart: always

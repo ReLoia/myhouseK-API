@@ -1,5 +1,6 @@
 .venv
-.env
+.idea
 .gitignore
 .git
 test_main.http
+README.md

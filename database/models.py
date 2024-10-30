@@ -8,7 +8,6 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# association table for the many-to-many relationship between users and tasks
 user_tasks = Table(
     "user_tasks",
     Base.metadata,
