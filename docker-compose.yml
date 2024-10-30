@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  web:
+    container_name: myhousek-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # API root path - leave empty for /
+      API_ROOT_PATH:
+    ports:
+      - "8000:8000"

@@ -14,7 +14,6 @@ from database.session import get_db
 from database.models import UserEntity, TaskEntity
 
 from models import TaskModel, UserModel, CreateTaskModel, Message, EditTaskModel
-from utils import TODO
 
 BASE_PATH = os.environ.get("API_ROOT_PATH", "")
 
