@@ -9,4 +9,6 @@ services:
       API_ROOT_PATH:
     ports:
       - "8000:8104"
+    volumes:
+      - /opt/myhousek-api:/app/data
     restart: always

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class CreateTaskModel(BaseModel):
     title: str
     description: str
-    assignedUsers: str
+    assignedUsers: list[str]
 
 
 class EditTaskModel(BaseModel):

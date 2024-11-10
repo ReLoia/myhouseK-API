@@ -3,7 +3,12 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
-DATABASE_URL = "sqlite:///./backend.db"
+import os
+
+if not os.path.exists("./data"):
+    os.mkdir("./data")
+
+DATABASE_URL = "sqlite:///./data/backend.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

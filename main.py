@@ -140,10 +140,10 @@ async def login(
 ):
     user = db.query(UserEntity).filter(UserEntity.username == form_data.username).first()
     if not user:
-        raise HTTPException(status_code=400, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
 
     if not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Incorrect password")
+        raise HTTPException(status_code=401, detail="Incorrect password")
 
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -156,7 +156,7 @@ async def register(
 ):
     user = db.query(UserEntity).filter(UserEntity.username == form_data.username).first()
     if user:
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=409, detail="User already exists")
 
     new_user = UserEntity(username=form_data.username, password_hash=get_password_hash(form_data.password))
     db.add(new_user)
